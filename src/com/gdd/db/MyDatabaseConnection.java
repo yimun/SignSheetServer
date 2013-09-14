@@ -1,10 +1,14 @@
 package com.gdd.db;
 
+import java.security.interfaces.RSAKey;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import com.gdd.model.Member;
+import com.gdd.model.Signtime;
 
 public class MyDatabaseConnection {
 
@@ -59,18 +63,35 @@ public class MyDatabaseConnection {
 	}
 	
 	public ResultSet executesql(Object mParameter ,int flag){		
+
+		
 		switch(flag){
 		case CHECKUSER:
-			
+			Member mymember = (Member)mParameter;
 			StringBuffer sbCheckuser = new StringBuffer();
 			sbCheckuser.append("select * from User where ");
-			
-			sql = sbCheckuser.toString();
-			
+			sbCheckuser.append("username='" + mymember.getUsername() + "' ");
+			sbCheckuser.append("and password='" + mymember.getPassword() + "'");
+			sql = sbCheckuser.toString();			
 			break;
 		case UPDATESHEET:
+			boolean Isexist = false;
 			StringBuffer sb = new StringBuffer();
-		
+			Signtime signtime = (Signtime)mParameter;
+			Isexist = checkexist(signtime.getUsername());
+			if(Isexist){
+				sb.append("update signresult set timesum=timesum+5,");
+				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
+				sb.append("where username='" + signtime.getUsername() + "'");
+			}
+			else
+			{
+				sb.append("insert into signresult values('','");
+				sb.append(signtime.getUsername() + "','");
+				sb.append(signtime.getCome_time() + "','");
+				sb.append("','','" + signtime.getCurrentDay() + "'");
+				
+			}
 			sql = sb.toString();			
 			break;
 		}
@@ -92,6 +113,34 @@ public class MyDatabaseConnection {
 			return null;
 		}		
 		return this.mResultSet;		
+	}
+	
+	private boolean checkexist(String username2) {
+		boolean isexist = false;
+		sql = "select * from signresult where username='" + username2 + "'";
+		try {
+			mResultSet = this.getstate().executeQuery(sql);
+			if(mResultSet.next()){
+				isexist = true;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public void insertUser(Member member){
+		StringBuffer insertUser_sb = new StringBuffer();
+		insertUser_sb.append("insert into User values('','");
+		insertUser_sb.append(member.getUsername() + "','");
+		insertUser_sb.append(member.getPassword() + "','");
+		insertUser_sb.append(member.getWorkcode() + "')");
+		sql = insertUser_sb.toString();		
+		try {
+			this.getstate().executeUpdate(sql);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void close() {

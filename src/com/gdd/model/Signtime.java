@@ -7,6 +7,7 @@ public class Signtime {
 	private String come_time = null;
 	private String leave_time = null;
 	private String time_sum = null;
+	private String currentday = null;
 	
 	public void setId(String id){
 		this.id = id;
@@ -23,6 +24,9 @@ public class Signtime {
 	public void setTime_sum(String time_sum){
 		this.time_sum = time_sum;
 	}
+	public void setCurrentday(String currentday){
+		this.currentday = currentday;
+	}
 	
 	public String getId(){
 		return this.id;
@@ -38,5 +42,8 @@ public class Signtime {
 	}
 	public String getTime_sum(){
 		return this.time_sum;
+	}
+	public String getCurrentDay() {
+		return currentday;
 	}
 }

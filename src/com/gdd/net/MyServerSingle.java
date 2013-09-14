@@ -84,7 +84,7 @@ public class MyServerSingle extends JFrame {
 				if(rs.next()){
 		            if("create".equals(method)){
 		            	member.setWorkcode(userinfo[3]);
-					    out.println("USEREXIT");  
+					    out.println("USEREXIST");  
 					    out.flush(); 
 		            }
 		            else{
@@ -100,6 +100,7 @@ public class MyServerSingle extends JFrame {
 		            if("create".equals(method)){
 		            	member.setWorkcode(userinfo[3]);
 //添加   一个    用户    检测    和    用户    插入    的   数据库    操作
+		            	mydatabaseconnection.insertUser(member);
 					    out.println("USERCREATED");  
 					    out.flush(); 
 		            }
