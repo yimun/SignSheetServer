@@ -29,9 +29,9 @@ public class MyDatabaseConnection {
 	public MyDatabaseConnection() {
 
 		dbDriver = "com.mysql.jdbc.Driver";
-		url = "jdbc:mysql://localhost/signsheet";
+		url = "jdbc:mysql://localhost/checkin";
 		username = "root";
-		password = "gdd759";
+		password = "dianxin";
 
 		mConnection = null;
 		mStatement = null;
@@ -83,7 +83,8 @@ public class MyDatabaseConnection {
 			if (Isexist) {
 				sb.append("update signresult set timesum=timesum+5,");
 				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
-				sb.append("where username='" + signtime.getUsername() + "'");
+				sb.append("where username='" + signtime.getUsername() + "' ");
+				sb.append("and currentday='"+signtime.getCurrentDay()+"'");
 			} else {
 				sb.append("insert into signresult values(NULL,'");
 				sb.append(signtime.getUsername() + "','");
