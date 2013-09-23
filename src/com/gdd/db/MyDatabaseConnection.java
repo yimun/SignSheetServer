@@ -29,9 +29,9 @@ public class MyDatabaseConnection {
 	public MyDatabaseConnection() {
 
 		dbDriver = "com.mysql.jdbc.Driver";
-		url = "jdbc:mysql://localhost/checkin";
+		url = "jdbc:mysql://192.168.9.124/checkin";
 		username = "root";
-		password = "dianxin";
+		password = "123abcd";
 
 		mConnection = null;
 		mStatement = null;
@@ -75,20 +75,22 @@ public class MyDatabaseConnection {
 			sql = sbCheckuser.toString();
 			break;
 		case UPDATESHEET:
-			boolean Isexist = false;
+
 			StringBuffer sb = new StringBuffer();
 			Signtime signtime = (Signtime) mParameter;
-			
-			Isexist = checkexist(signtime.getUsername(),signtime.getCurrentDay());
-			if (Isexist) {
+			int getid = checkDistance(signtime);
+
+			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过15分钟
+
 				sb.append("update signresult set timesum=timesum+5,");
 				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
-				sb.append("where username='" + signtime.getUsername() + "' ");
-				sb.append("and currentday='"+signtime.getCurrentDay()+"'");
+				sb.append("where id='" + getid + "'");
+
 			} else {
 				sb.append("insert into signresult values(NULL,'");
 				sb.append(signtime.getUsername() + "','");
-				sb.append(signtime.getCome_time() + "','0:00");
+				sb.append(signtime.getCome_time() + "','"
+						+ signtime.getCome_time());
 				sb.append("','0','" + signtime.getCurrentDay() + "')");
 			}
 			sql = sb.toString();
@@ -114,21 +116,15 @@ public class MyDatabaseConnection {
 		return this.mResultSet;
 	}
 
-	// 检查签到表中用户的存在与否
-	private boolean checkexist(String username2, String currentday) {
-		boolean isexist = false;
-		sql = "select * from signresult where username='" + username2 + 
-				"'" +" and currentday='" + currentday + "'";
-		try {
-			mResultSet = this.getstate().executeQuery(sql);
-			if (mResultSet.next()) {
-				isexist = true;
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return isexist;
-	}
+	/*
+	 * // 检查签到表中用户的存在与否 private boolean checkexist(String username2, String
+	 * currentday) { boolean isexist = false; sql =
+	 * "select * from signresult where username='" + username2 + "'" +
+	 * " and currentday='" + currentday + "'"; try { mResultSet =
+	 * this.getstate().executeQuery(sql); if (mResultSet.next()) { isexist =
+	 * true; } } catch (SQLException e) { e.printStackTrace(); } return isexist;
+	 * }
+	 */
 
 	// 新增一个用户
 	public void insertUser(Member member) {
@@ -166,4 +162,34 @@ public class MyDatabaseConnection {
 			e.printStackTrace();
 		}
 	}
+
+	public int checkDistance(Signtime signtime) {
+
+		String timeFore;
+		sql = "select * from signresult where username='"
+				+ signtime.getUsername() + "'" + "and currentday='"
+				+ signtime.getCurrentDay() + "'";
+		try {
+			mResultSet = this.getstate().executeQuery(sql);
+			while (mResultSet.next()) {
+				timeFore = mResultSet.getString(4);
+				System.out.println("timefore="+timeFore);
+				if (getMinOfDay(signtime.getCome_time())- getMinOfDay(timeFore) < 15) {
+					return mResultSet.getInt(1);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return -1;
+	}
+
+	public int getMinOfDay(String str) {
+		int hour, minute;
+		String strarr[] = str.split(":");
+		hour = Integer.parseInt(strarr[0]);
+		minute = Integer.parseInt(strarr[1]);
+		return hour * 60 + minute;
+	}
+
 }

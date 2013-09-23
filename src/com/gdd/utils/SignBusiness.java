@@ -26,7 +26,7 @@ public class SignBusiness {
 		Date date = new Date();
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(date);
-		curMonth = cal.get(Calendar.MONTH);
+		curMonth = cal.get(Calendar.MONTH)+1;
 		curDay = cal.get(Calendar.DAY_OF_MONTH);
 		curHour = cal.get(Calendar.HOUR_OF_DAY);
 		curMinute = cal.get(Calendar.MINUTE);
