@@ -82,7 +82,7 @@ public class MyDatabaseConnection {
 
 			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过15分钟
 
-				sb.append("update signresult set timesum=timesum+5,");
+				sb.append("update signresult set timesum=timesum+2,");
 				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
 				sb.append("where id='" + getid + "'");
 
@@ -116,15 +116,7 @@ public class MyDatabaseConnection {
 		return this.mResultSet;
 	}
 
-	/*
-	 * // 检查签到表中用户的存在与否 private boolean checkexist(String username2, String
-	 * currentday) { boolean isexist = false; sql =
-	 * "select * from signresult where username='" + username2 + "'" +
-	 * " and currentday='" + currentday + "'"; try { mResultSet =
-	 * this.getstate().executeQuery(sql); if (mResultSet.next()) { isexist =
-	 * true; } } catch (SQLException e) { e.printStackTrace(); } return isexist;
-	 * }
-	 */
+
 
 	// 新增一个用户
 	public void insertUser(Member member) {
@@ -163,6 +155,11 @@ public class MyDatabaseConnection {
 		}
 	}
 
+	/**
+	 * 检查签到是否该与上一次累加
+	 * @param signtime
+	 * @return 符合条件返回记录的行号，否则返回-1
+	 */
 	public int checkDistance(Signtime signtime) {
 
 		String timeFore;
@@ -173,8 +170,8 @@ public class MyDatabaseConnection {
 			mResultSet = this.getstate().executeQuery(sql);
 			while (mResultSet.next()) {
 				timeFore = mResultSet.getString(4);
-				System.out.println("timefore="+timeFore);
-				if (getMinOfDay(signtime.getCome_time())- getMinOfDay(timeFore) < 15) {
+				//System.out.println("timefore="+timeFore);
+				if (getMinOfDay(signtime.getCome_time())- getMinOfDay(timeFore) < 5) {
 					return mResultSet.getInt(1);
 				}
 			}
@@ -191,5 +188,7 @@ public class MyDatabaseConnection {
 		minute = Integer.parseInt(strarr[1]);
 		return hour * 60 + minute;
 	}
+	
+	
 
 }

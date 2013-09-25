@@ -12,8 +12,8 @@ public class Client {
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));  
         PrintWriter out = new PrintWriter(socket.getOutputStream());  
  //       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));  
-       // out.println("create;dd;dd;dd");  
-        out.println("check;dddd;ddd;ddd");
+        out.println("check;test22;dd;dd");  
+        //out.println("check;dddd;ddd;ddd");
         out.flush();  
         System.out.println(in.readLine()); 
         socket.close();  

@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import javax.swing.JFrame;
 
 import com.gdd.db.MyDatabaseConnection;
+import com.gdd.mail.DayMail;
 import com.gdd.model.Member;
 import com.gdd.utils.SignBusiness;
 
@@ -48,6 +49,8 @@ public class MyServerSingle extends JFrame {
 		this.add(showServerLog, BorderLayout.CENTER);
 		// 显示窗口
 		this.setVisible(true);
+		// 设置定时邮件
+		new DayMail().send();
 
 		// 服务套接字开始
 		try {
@@ -77,6 +80,14 @@ public class MyServerSingle extends JFrame {
 				// 把套接字接受到的信息解析
 				member = new Member();
 				userinfo = msg0.split(";");
+				if(userinfo.length!=4){
+					out.println("LOGINFAIL");
+					out.flush();
+					socket.close();
+					in.close();
+					out.close();
+					continue;
+				}
 				method = userinfo[0];
 				member.setUsername(userinfo[1]);
 				member.setPassword(userinfo[2]);
