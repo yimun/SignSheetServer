@@ -13,6 +13,7 @@ public class MyDatabaseConnection {
 	// 区分方法
 	final static int CHECKUSER = 1;
 	final static int UPDATESHEET = 2;
+	final static int CHANGEMM = 3;
 	// 数据库语句字符串
 	public String sql = null;
 	// 数据库连接字符串
@@ -29,9 +30,10 @@ public class MyDatabaseConnection {
 	public MyDatabaseConnection() {
 
 		dbDriver = "com.mysql.jdbc.Driver";
-		url = "jdbc:mysql://192.168.9.124/checkin";
+		url = "jdbc:mysql://192.168.9.114/checkin" +
+				"?useUnicode=true&characterEncoding=utf8"; // 防止数据库汉字乱码
 		username = "root";
-		password = "123abcd";
+		password = "linwei";
 
 		mConnection = null;
 		mStatement = null;
@@ -71,16 +73,16 @@ public class MyDatabaseConnection {
 			StringBuffer sbCheckuser = new StringBuffer();
 			sbCheckuser.append("select * from User where ");
 			sbCheckuser.append("username='" + mymember.getUsername() + "' ");
-			sbCheckuser.append("and password='" + mymember.getPassword() + "'");
+			sbCheckuser.append("and password='" + mymember.getPassword() + "' ");
+			sbCheckuser.append("and workcode='" + mymember.getWorkcode() + "'");
 			sql = sbCheckuser.toString();
 			break;
 		case UPDATESHEET:
-
 			StringBuffer sb = new StringBuffer();
 			Signtime signtime = (Signtime) mParameter;
 			int getid = checkDistance(signtime);
 
-			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过15分钟
+			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过10分钟
 
 				sb.append("update signresult set timesum=timesum+2,");
 				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
@@ -95,6 +97,14 @@ public class MyDatabaseConnection {
 			}
 			sql = sb.toString();
 			break;
+		case CHANGEMM:
+			Member member = (Member) mParameter;
+			StringBuffer sbChangemm = new StringBuffer();
+			sbChangemm.append("update User set password='" + member.getExtra()
+					+ "' ");
+			sbChangemm.append("where username='" + member.getUsername() + "'");
+			sql = sbChangemm.toString();
+			break;
 		}
 
 		try {
@@ -104,6 +114,7 @@ public class MyDatabaseConnection {
 				this.mResultSet = this.getstate().executeQuery(sql);
 				break;
 			case UPDATESHEET:
+			case CHANGEMM:
 				this.getstate().executeUpdate(sql);
 				this.mResultSet = null;
 				break;
@@ -115,8 +126,6 @@ public class MyDatabaseConnection {
 		}
 		return this.mResultSet;
 	}
-
-
 
 	// 新增一个用户
 	public void insertUser(Member member) {
@@ -137,19 +146,22 @@ public class MyDatabaseConnection {
 	public void close() {
 
 		try {
-			mResultSet.close();
+			if (mResultSet != null)
+				mResultSet.close();
 		} catch (SQLException e2) {
 			e2.printStackTrace();
 		}
 
 		try {
-			mStatement.close();
+			if (mStatement != null)
+				mStatement.close();
 		} catch (SQLException e1) {
 			e1.printStackTrace();
 		}
 
 		try {
-			mConnection.close();
+			if (mConnection != null)
+				mConnection.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -157,8 +169,9 @@ public class MyDatabaseConnection {
 
 	/**
 	 * 检查签到是否该与上一次累加
+	 * 
 	 * @param signtime
-	 * @return 符合条件返回记录的行号，否则返回-1
+	 * @return 符合条件返回记录的id，否则返回-1
 	 */
 	public int checkDistance(Signtime signtime) {
 
@@ -170,8 +183,9 @@ public class MyDatabaseConnection {
 			mResultSet = this.getstate().executeQuery(sql);
 			while (mResultSet.next()) {
 				timeFore = mResultSet.getString(4);
-				//System.out.println("timefore="+timeFore);
-				if (getMinOfDay(signtime.getCome_time())- getMinOfDay(timeFore) < 5) {
+				// System.out.println("timefore="+timeFore);
+				if (getMinOfDay(signtime.getCome_time())
+						- getMinOfDay(timeFore) < 10) {
 					return mResultSet.getInt(1);
 				}
 			}
@@ -188,7 +202,5 @@ public class MyDatabaseConnection {
 		minute = Integer.parseInt(strarr[1]);
 		return hour * 60 + minute;
 	}
-	
-	
 
 }

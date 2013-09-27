@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 
 import javax.swing.JFrame;
 
@@ -38,6 +39,9 @@ public class MyServerSingle extends JFrame {
 	// 套接字的一些要用的输入输出
 	private BufferedReader in = null;
 	private PrintWriter out = null;
+	// 区分方法
+	final static int CHECKUSER = 1;
+	final static int CHANGEMM = 3;
 
 	public MyServerSingle() {
 		// 控件的设置外观设置
@@ -66,22 +70,24 @@ public class MyServerSingle extends JFrame {
 				socket = mServer.accept();
 				mydatabaseconnection = new MyDatabaseConnection();
 				in = new BufferedReader(new InputStreamReader(
-						socket.getInputStream()));
+						socket.getInputStream(), "UTF-8")); // 规定文字编码格式为UTF-8，android默认的汉字编码
 				out = new PrintWriter(socket.getOutputStream());
 				// 套接字接受数据显示在控制台
 				String msg0 = in.readLine();
+				System.out.println("msg0=" + msg0);
 				StringBuffer sb0 = new StringBuffer();
 				sb0.append(showServerLog.getText());
 				if (showServerLog.getText() != null
 						&& !showServerLog.getText().equals(""))
 					sb0.append('\n');
-				sb0.append(msg0);
+				Date date = new Date();
+				sb0.append(date +"："+ msg0);
 				showServerLog.setText(sb0.toString());
 				// 把套接字接受到的信息解析
 				member = new Member();
 				userinfo = msg0.split(";");
-				if(userinfo.length!=4){
-					out.println("LOGINFAIL");
+				if (userinfo.length != 4) {
+					out.println("LENGTHFAIL");
 					out.flush();
 					socket.close();
 					in.close();
@@ -91,59 +97,76 @@ public class MyServerSingle extends JFrame {
 				method = userinfo[0];
 				member.setUsername(userinfo[1]);
 				member.setPassword(userinfo[2]);
+				member.setWorkcode(userinfo[3]);
 
 			} catch (IOException e) {
 				System.out.println("套接字输入输出流出错了！");
 				e.printStackTrace();
 			}
-			rs = mydatabaseconnection.executesql(member, 1);
+			rs = mydatabaseconnection.executesql(member, CHECKUSER); // 检查该用户在User表中是否存在
 			try {
 				if (rs.next()) {
-					if ("create".equals(method)) {
-						member.setWorkcode(userinfo[3]);
+					/** 存在该用户记录 */
+					switch (method) {
+					case "create": // 创建用户
+
 						out.println("USEREXIST");
 						out.flush();
-					} else {
-						signbusiness = new SignBusiness(member.getUsername());
-						signbusiness.updatememberinfo();
-						// 添 加 一 个 更 新 数 据 库 的 方 法
+						break;
+					case "login": // 用户登录
 						out.println("LOGINSUCCESS");
 						out.flush();
+						break;
+					case "check": // 用户签到
+						signbusiness = new SignBusiness(member.getUsername());
+						signbusiness.updatememberinfo();
+						out.println("CHECKSUCCESS");
+						out.flush();
+						break;
+					case "changemm":// 更改密码
+						member.setExtra(userinfo[3]); //
+						mydatabaseconnection.executesql(member, CHANGEMM);
+						out.println("CHANGEMMSUCCESS");
+						out.flush();
+						break;
 					}
 
 				} else {
-					if ("create".equals(method)) {
-						member.setWorkcode(userinfo[3]);
-						// 添加 一个 用户 检测 和 用户 插入 的 数据库 操作
+					/** 不存在该用户记录 */
+					switch (method) {
+					case "create":
+
 						mydatabaseconnection.insertUser(member);
 						out.println("USERCREATED");
 						out.flush();
-					} else {
+						break;
+					case "login":
 						out.println("LOGINFAIL");
 						out.flush();
+						break;
+					case "check":
+						out.println("CHECKFAIL");
+						out.flush();
+						break;
+					case "changemm":
+						out.println("CHANGEMMFAIL");
+						out.flush();
+						break;
 					}
-
 				}
 			} catch (SQLException e) {
 				System.out.println("数据库集合出错！");
 				e.printStackTrace();
 			} finally {
 				try {
+					mydatabaseconnection.close();
+					rs.close();
 					in.close();
-				} catch (Exception e) {
-				}
-				try {
 					out.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
-				try {
-					rs.close();
-				} catch (Exception e) {
-				}
-				try {
-					mydatabaseconnection.close();
-				} catch (Exception e) {
-				}
+
 			}
 		}
 	}

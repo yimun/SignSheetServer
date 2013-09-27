@@ -14,6 +14,8 @@ public class SignBusiness {
 	private int curDay = 0;
 	private int curHour = 0;
 	private int curMinute = 0;
+	final static int UPDATESHEET = 2;
+	
 
 	// 工具相关的
 	private MyDatabaseConnection busiConnection = null;
@@ -39,6 +41,6 @@ public class SignBusiness {
 	}
 
 	public void updatememberinfo() {
-		busiConnection.executesql(signtime, 2);
+		busiConnection.executesql(signtime, UPDATESHEET);
 	}
 }
