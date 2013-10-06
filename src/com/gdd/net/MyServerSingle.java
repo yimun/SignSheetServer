@@ -1,7 +1,5 @@
 package com.gdd.net;
 
-import java.awt.BorderLayout;
-import java.awt.TextArea;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,14 +10,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 
-import javax.swing.JFrame;
-
 import com.gdd.db.MyDatabaseConnection;
 import com.gdd.mail.DayMail;
 import com.gdd.model.Member;
 import com.gdd.utils.SignBusiness;
 
-public class MyServerSingle extends JFrame {
+public class MyServerSingle{
 
 	/**
 	 * 
@@ -27,8 +23,6 @@ public class MyServerSingle extends JFrame {
 	private static final long serialVersionUID = 5965679769822091793L;
 	// 服务器套接字
 	private ServerSocket mServer = null;
-	// 控件
-	private static TextArea showServerLog = null;
 	// 各种数据
 	private String[] userinfo = new String[5];
 	private String method = null;
@@ -45,20 +39,14 @@ public class MyServerSingle extends JFrame {
 	final static int CHANGEMM = 3;
 
 	public MyServerSingle() {
-		// 控件的设置外观设置
-		this.setLayout(new BorderLayout());
-		this.setBounds(60, 60, 500, 500);
-		this.setTitle("签到系统控制台");
-		// 控件设置
-		showServerLog = new TextArea(10, 10);
-		this.add(showServerLog, BorderLayout.CENTER);
-		// 显示窗口
-		this.setVisible(true);
+		
+		
 		// 设置定时邮件
 		new DayMail().send();
 
 		// 服务套接字开始
 		try {
+			System.out.println("服务器开始运行！");
 			mServer = new ServerSocket(9000);
 		} catch (IOException e) {
 			System.out.println("服务器套接字出错！");
@@ -75,9 +63,8 @@ public class MyServerSingle extends JFrame {
 				out = new PrintWriter(socket.getOutputStream());
 				// 套接字接受数据显示在控制台
 				String msg0 = in.readLine();
-				System.out.println("msg0=" + msg0);
 				Date date = new Date();
-				updateConsole("\n"+date +"："+ msg0); // 更新控制台界面
+				System.out.println(date +"："+ msg0); // 更新控制台界面
 				// 把套接字接受到的信息解析
 				member = new Member();
 				userinfo = msg0.split(";");
@@ -87,7 +74,7 @@ public class MyServerSingle extends JFrame {
 					outPrintStr = "LENGTHERROR";
 					out.println(outPrintStr);
 					out.flush();
-					updateConsole("————————————"+outPrintStr);
+					System.out.println(outPrintStr);
 					socket.close();
 					in.close();
 					out.close();
@@ -103,7 +90,8 @@ public class MyServerSingle extends JFrame {
 				System.out.println("套接字输入输出流出错了！");
 				e.printStackTrace();
 			}
-			rs = mydatabaseconnection.executesql(member, CHECKUSER); // 检查该用户在User表中是否存在
+			// 检查该用户在User表中是否存在
+			rs = mydatabaseconnection.executesql(member, CHECKUSER); 
 			try {
 				if (rs.next()) {
 					/** 存在该用户记录 */
@@ -147,7 +135,7 @@ public class MyServerSingle extends JFrame {
 				//输出数据
 				out.println(outPrintStr);
 				out.flush();
-				updateConsole("————————————"+outPrintStr);
+				System.out.println("Result:"+outPrintStr);
 			} catch (SQLException e) {
 				System.out.println("数据库集合出错！");
 				e.printStackTrace();
@@ -165,12 +153,6 @@ public class MyServerSingle extends JFrame {
 		}
 	}
 	
-	public void updateConsole(String content){
-		StringBuffer sb0 = new StringBuffer();
-		sb0.append(showServerLog.getText());
-		sb0.append(content);
-		showServerLog.setText(sb0.toString());
-	}
 
 	public static void main(String args[]) {
 		new MyServerSingle();
