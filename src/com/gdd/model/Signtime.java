@@ -32,6 +32,8 @@ public class Signtime {
 	public void setCurrentday(String currentday) {
 		this.currentday = currentday;
 	}
+	
+
 
 	public String getId() {
 		return this.id;
@@ -56,4 +58,6 @@ public class Signtime {
 	public String getCurrentDay() {
 		return currentday;
 	}
+	
+	
 }

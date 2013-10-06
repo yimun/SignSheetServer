@@ -6,6 +6,7 @@ public class Member {
 	private String username = null;
 	private String password = null;
 	private String workcode = null;
+	private String extra = null;
 
 	public void setId(String id) {
 		this.id = id;
@@ -22,6 +23,9 @@ public class Member {
 	public void setWorkcode(String workcode) {
 		this.workcode = workcode;
 	}
+	public void setExtra(String extra){
+		this.extra = extra;
+	}
 
 	public String getId() {
 		return this.id;
@@ -37,5 +41,9 @@ public class Member {
 
 	public String getWorkcode() {
 		return this.workcode;
+	}
+	
+	public String getExtra(){
+		return this.extra;
 	}
 }

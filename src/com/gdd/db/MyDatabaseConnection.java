@@ -13,6 +13,7 @@ public class MyDatabaseConnection {
 	// 区分方法
 	final static int CHECKUSER = 1;
 	final static int UPDATESHEET = 2;
+	final static int CHANGEMM = 3;
 	// 数据库语句字符串
 	public String sql = null;
 	// 数据库连接字符串
@@ -29,9 +30,10 @@ public class MyDatabaseConnection {
 	public MyDatabaseConnection() {
 
 		dbDriver = "com.mysql.jdbc.Driver";
-		url = "jdbc:mysql://localhost/signsheet";
+		url = "jdbc:mysql://localhost/checkin" +
+				"?useUnicode=true&characterEncoding=utf8"; // 防止数据库汉字乱码
 		username = "root";
-		password = "gdd759";
+		password = "linwei";
 
 		mConnection = null;
 		mStatement = null;
@@ -71,26 +73,37 @@ public class MyDatabaseConnection {
 			StringBuffer sbCheckuser = new StringBuffer();
 			sbCheckuser.append("select * from User where ");
 			sbCheckuser.append("username='" + mymember.getUsername() + "' ");
-			sbCheckuser.append("and password='" + mymember.getPassword() + "'");
+			sbCheckuser.append("and password='" + mymember.getPassword() + "' ");
+			sbCheckuser.append("and workcode='" + mymember.getWorkcode() + "'");
 			sql = sbCheckuser.toString();
 			break;
 		case UPDATESHEET:
-			boolean Isexist = false;
 			StringBuffer sb = new StringBuffer();
 			Signtime signtime = (Signtime) mParameter;
-			
-			Isexist = checkexist(signtime.getUsername(),signtime.getCurrentDay());
-			if (Isexist) {
-				sb.append("update signresult set timesum=timesum+5,");
+			int getid = checkDistance(signtime);
+
+			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过10分钟
+
+				sb.append("update signresult set timesum=timesum+2,");
 				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
-				sb.append("where username='" + signtime.getUsername() + "'");
+				sb.append("where id='" + getid + "'");
+
 			} else {
 				sb.append("insert into signresult values(NULL,'");
 				sb.append(signtime.getUsername() + "','");
-				sb.append(signtime.getCome_time() + "','0:00");
+				sb.append(signtime.getCome_time() + "','"
+						+ signtime.getCome_time());
 				sb.append("','0','" + signtime.getCurrentDay() + "')");
 			}
 			sql = sb.toString();
+			break;
+		case CHANGEMM:
+			Member member = (Member) mParameter;
+			StringBuffer sbChangemm = new StringBuffer();
+			sbChangemm.append("update User set password='" + member.getExtra()
+					+ "' ");
+			sbChangemm.append("where username='" + member.getUsername() + "'");
+			sql = sbChangemm.toString();
 			break;
 		}
 
@@ -101,6 +114,7 @@ public class MyDatabaseConnection {
 				this.mResultSet = this.getstate().executeQuery(sql);
 				break;
 			case UPDATESHEET:
+			case CHANGEMM:
 				this.getstate().executeUpdate(sql);
 				this.mResultSet = null;
 				break;
@@ -111,22 +125,6 @@ public class MyDatabaseConnection {
 			return null;
 		}
 		return this.mResultSet;
-	}
-
-	// 检查签到表中用户的存在与否
-	private boolean checkexist(String username2, String currentday) {
-		boolean isexist = false;
-		sql = "select * from signresult where username='" + username2 + 
-				"'" +" and currentday='" + currentday + "'";
-		try {
-			mResultSet = this.getstate().executeQuery(sql);
-			if (mResultSet.next()) {
-				isexist = true;
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return isexist;
 	}
 
 	// 新增一个用户
@@ -148,21 +146,61 @@ public class MyDatabaseConnection {
 	public void close() {
 
 		try {
-			mResultSet.close();
+			if (mResultSet != null)
+				mResultSet.close();
 		} catch (SQLException e2) {
 			e2.printStackTrace();
 		}
 
 		try {
-			mStatement.close();
+			if (mStatement != null)
+				mStatement.close();
 		} catch (SQLException e1) {
 			e1.printStackTrace();
 		}
 
 		try {
-			mConnection.close();
+			if (mConnection != null)
+				mConnection.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
+
+	/**
+	 * 检查签到是否该与上一次累加
+	 * 
+	 * @param signtime
+	 * @return 符合条件返回记录的id，否则返回-1
+	 */
+	public int checkDistance(Signtime signtime) {
+
+		String timeFore;
+		sql = "select * from signresult where username='"
+				+ signtime.getUsername() + "'" + "and currentday='"
+				+ signtime.getCurrentDay() + "'";
+		try {
+			mResultSet = this.getstate().executeQuery(sql);
+			while (mResultSet.next()) {
+				timeFore = mResultSet.getString(4);
+				// System.out.println("timefore="+timeFore);
+				if (getMinOfDay(signtime.getCome_time())
+						- getMinOfDay(timeFore) < 10) {
+					return mResultSet.getInt(1);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return -1;
+	}
+
+	public int getMinOfDay(String str) {
+		int hour, minute;
+		String strarr[] = str.split(":");
+		hour = Integer.parseInt(strarr[0]);
+		minute = Integer.parseInt(strarr[1]);
+		return hour * 60 + minute;
+	}
+
 }

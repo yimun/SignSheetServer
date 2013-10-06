@@ -10,10 +10,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 
 import javax.swing.JFrame;
 
 import com.gdd.db.MyDatabaseConnection;
+import com.gdd.mail.DayMail;
 import com.gdd.model.Member;
 import com.gdd.utils.SignBusiness;
 
@@ -37,6 +39,10 @@ public class MyServerSingle extends JFrame {
 	// 套接字的一些要用的输入输出
 	private BufferedReader in = null;
 	private PrintWriter out = null;
+	private String outPrintStr = null;
+	// 区分方法
+	final static int CHECKUSER = 1;
+	final static int CHANGEMM = 3;
 
 	public MyServerSingle() {
 		// 控件的设置外观设置
@@ -48,6 +54,8 @@ public class MyServerSingle extends JFrame {
 		this.add(showServerLog, BorderLayout.CENTER);
 		// 显示窗口
 		this.setVisible(true);
+		// 设置定时邮件
+		new DayMail().send();
 
 		// 服务套接字开始
 		try {
@@ -63,78 +71,105 @@ public class MyServerSingle extends JFrame {
 				socket = mServer.accept();
 				mydatabaseconnection = new MyDatabaseConnection();
 				in = new BufferedReader(new InputStreamReader(
-						socket.getInputStream()));
+						socket.getInputStream(), "UTF-8")); // 规定文字编码格式为UTF-8，android默认的汉字编码
 				out = new PrintWriter(socket.getOutputStream());
 				// 套接字接受数据显示在控制台
 				String msg0 = in.readLine();
-				StringBuffer sb0 = new StringBuffer();
-				sb0.append(showServerLog.getText());
-				if (showServerLog.getText() != null
-						&& !showServerLog.getText().equals(""))
-					sb0.append('\n');
-				sb0.append(msg0);
-				showServerLog.setText(sb0.toString());
+				System.out.println("msg0=" + msg0);
+				Date date = new Date();
+				updateConsole("\n"+date +"："+ msg0); // 更新控制台界面
 				// 把套接字接受到的信息解析
 				member = new Member();
 				userinfo = msg0.split(";");
+				
+				// 意外情况：传输字符串长度不符合要求抛出
+				if (userinfo.length < 4) {
+					outPrintStr = "LENGTHERROR";
+					out.println(outPrintStr);
+					out.flush();
+					updateConsole("————————————"+outPrintStr);
+					socket.close();
+					in.close();
+					out.close();
+					continue;
+				}
+				
 				method = userinfo[0];
 				member.setUsername(userinfo[1]);
 				member.setPassword(userinfo[2]);
+				member.setWorkcode(userinfo[3]);
 
 			} catch (IOException e) {
 				System.out.println("套接字输入输出流出错了！");
 				e.printStackTrace();
 			}
-			rs = mydatabaseconnection.executesql(member, 1);
+			rs = mydatabaseconnection.executesql(member, CHECKUSER); // 检查该用户在User表中是否存在
 			try {
 				if (rs.next()) {
-					if ("create".equals(method)) {
-						member.setWorkcode(userinfo[3]);
-						out.println("USEREXIST");
-						out.flush();
-					} else {
+					/** 存在该用户记录 */
+					switch (method) {
+					case "create": // 创建用户
+						outPrintStr = "USEREXIST";
+						break;
+					case "login": // 用户登录
+						outPrintStr = "LOGINSUCCESS";
+						break;
+					case "check": // 用户签到
 						signbusiness = new SignBusiness(member.getUsername());
 						signbusiness.updatememberinfo();
-						// 添 加 一 个 更 新 数 据 库 的 方 法
-						out.println("LOGINSUCCESS");
-						out.flush();
+						outPrintStr ="CHECKSUCCESS";
+						break;
+					case "changemm":// 更改密码
+						member.setExtra(userinfo[4]); //
+						mydatabaseconnection.executesql(member, CHANGEMM);
+						outPrintStr ="CHANGEMMSUCCESS";
+						break;
 					}
 
 				} else {
-					if ("create".equals(method)) {
-						member.setWorkcode(userinfo[3]);
-						// 添加 一个 用户 检测 和 用户 插入 的 数据库 操作
+					/** 不存在该用户记录 */
+					switch (method) {
+					case "create":
 						mydatabaseconnection.insertUser(member);
-						out.println("USERCREATED");
-						out.flush();
-					} else {
-						out.println("LOGINFAIL");
-						out.flush();
+						outPrintStr ="USERCREATED";
+						break;
+					case "login":
+						outPrintStr ="LOGINFAIL";
+						break;
+					case "check":
+						outPrintStr ="CHECKFAIL";
+						break;
+					case "changemm":
+						outPrintStr ="CHANGEMMFAIL";
+						break;
 					}
-
 				}
+				//输出数据
+				out.println(outPrintStr);
+				out.flush();
+				updateConsole("————————————"+outPrintStr);
 			} catch (SQLException e) {
 				System.out.println("数据库集合出错！");
 				e.printStackTrace();
 			} finally {
 				try {
+					mydatabaseconnection.close();
+					rs.close();
 					in.close();
-				} catch (Exception e) {
-				}
-				try {
 					out.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
-				try {
-					rs.close();
-				} catch (Exception e) {
-				}
-				try {
-					mydatabaseconnection.close();
-				} catch (Exception e) {
-				}
+
 			}
 		}
+	}
+	
+	public void updateConsole(String content){
+		StringBuffer sb0 = new StringBuffer();
+		sb0.append(showServerLog.getText());
+		sb0.append(content);
+		showServerLog.setText(sb0.toString());
 	}
 
 	public static void main(String args[]) {
