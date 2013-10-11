@@ -8,6 +8,7 @@ import java.sql.Statement;
 
 import com.gdd.model.Member;
 import com.gdd.model.Signtime;
+import com.gdd.utils.ComParam;
 
 public class MyDatabaseConnection {
 	// 区分方法
@@ -82,7 +83,7 @@ public class MyDatabaseConnection {
 			Signtime signtime = (Signtime) mParameter;
 			int getid = checkDistance(signtime);
 
-			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过10分钟
+			if (getid != -1) { // 如果存在并且上一次离开的时间与该次签到时间相差不超过20分钟
 
 				sb.append("update signresult set timesum=timesum+2,");
 				sb.append("leave_time='" + signtime.getLeave_time() + "' ");
@@ -179,13 +180,14 @@ public class MyDatabaseConnection {
 		sql = "select * from signresult where username='"
 				+ signtime.getUsername() + "'" + "and currentday='"
 				+ signtime.getCurrentDay() + "'";
+		int sysAllow = Integer.parseInt(ComParam.getParam("Leave_time_allowed"));
 		try {
 			mResultSet = this.getstate().executeQuery(sql);
 			while (mResultSet.next()) {
 				timeFore = mResultSet.getString(4);
 				// System.out.println("timefore="+timeFore);
 				if (getMinOfDay(signtime.getCome_time())
-						- getMinOfDay(timeFore) < 10) {
+						- getMinOfDay(timeFore) < sysAllow ) {
 					return mResultSet.getInt(1);
 				}
 			}

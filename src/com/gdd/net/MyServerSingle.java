@@ -18,7 +18,7 @@ import com.gdd.utils.SignBusiness;
 public class MyServerSingle{
 
 	/**
-	 * 
+	 * 主服务界面
 	 */
 	private static final long serialVersionUID = 5965679769822091793L;
 	// 服务器套接字

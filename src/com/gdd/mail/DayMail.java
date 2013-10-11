@@ -3,7 +3,9 @@ package com.gdd.mail;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -15,10 +17,11 @@ public class DayMail {
 	private static final long PERIOD_DAY = 24 * 60 * 60 * 1000;
 	private MyDatabaseConnection mydatabaseconnection = null;
 
-	/*public static void main(String[] args) {
-
-		new DayMail().send();
-	}*/
+	/*
+	 * public static void main(String[] args) {
+	 * 
+	 * new DayMail().send(); }
+	 */
 
 	public void send() {
 
@@ -79,9 +82,18 @@ public class DayMail {
 
 	}
 
+	/**
+	 * 获得邮件发送内容
+	 * 数据库的当天数据读取
+	 * @return
+	 * @throws SQLException
+	 */
 	public String getMailContent() throws SQLException {
 
 		ResultSet rs;
+		ResultSet rslim;
+		Collection<String> set = new HashSet<String>();
+		
 		mydatabaseconnection = new MyDatabaseConnection();
 		Date date = new Date();
 		Calendar cal = Calendar.getInstance();
@@ -89,23 +101,51 @@ public class DayMail {
 		String sql = "select * from signresult where currentday='"
 				+ (cal.get(Calendar.MONTH) + 1) + "/"
 				+ cal.get(Calendar.DAY_OF_MONTH) + "'";
-
 		rs = mydatabaseconnection.getstate().executeQuery(sql);
+		while (rs.next()) {
+			set.add(rs.getString("username"));
+		}
+		System.out.println(set);
 
 		StringBuilder sb = new StringBuilder();
-
 		sb.append("<table style=\"width:100%;background-color:#CCCCCC;\" border=\"1\" "
 				+ "bordercolor=\"#000000\" cellpadding=\"2\" cellspacing=\"0\"><tbody>");
-
-		sb.append("<td>记录<br /><td>学生<br /></td><td>签到时间<br /></td><td>离开时间<br /></td><td>所在时长(min)<br /></td>");
+		sb.append("<td>记录<br /><td>学生<br /></td><td>签到时间<br /></td><td>离开时间<br /></td><td>所在时长(min)<br /></td><td>合计时长<br /></td>");
 		int row = 1;
-		while (rs.next()) {
-			sb.append("<tr>");
-			sb.append(String.format("<td>%d<br /></td>",row++));
-			for (int i = 2; i < 6; i++) {
-				sb.append(String.format("<td>%s<br /></td>", rs.getString(i)));
+		for (String username : set) {
+
+			rslim = mydatabaseconnection.getstate().executeQuery(
+					sql + " and username='" + username + "'");
+			int time = 0;
+			int timecal = 0;
+			while (rslim.next()) {
+				timecal += Integer.parseInt(rslim.getString("timesum"));
+				time++;
 			}
-			sb.append("</tr>");
+
+			sb.append("<tr>");
+			sb.append(String.format("<td rowspan=\"%d\" >%d<br /></td>", time,
+					row++));
+			sb.append(String.format("<td rowspan=\"%d\" >%s<br /></td>", time,
+					username));
+
+			rslim.first();
+			for (int j = 0; j < time; j++) {
+
+				if (j != 0)
+					sb.append("<tr>");
+				for (int i = 3; i < 6; i++) {
+					sb.append(String.format("<td>%s<br /></td>",
+							rslim.getString(i)));
+				}
+				if (j == 0)
+					sb.append(String.format(
+							"<td rowspan=\"%d\" >%d小时%d分钟<br /></td>", time, // 时长总计
+							timecal / 60, timecal % 60));
+				sb.append("</tr>");
+				rslim.next();
+			}
+
 		}
 		sb.append("</tbody></table>");
 
@@ -129,6 +169,19 @@ public class DayMail {
 			date = addDay(date, 1);
 		}
 		return date;
+
+	}
+
+	public static void main(String[] args) {
+		try {
+
+			String str = new DayMail().getMailContent();
+			System.out.println(str);
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 }

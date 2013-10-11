@@ -1,6 +1,6 @@
 package com.gdd.utils;
 
-
+import java.io.File;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
@@ -12,7 +12,6 @@ import java.util.ResourceBundle;
 public class ComParam {
 	private static String propertyFileName;
 	private static ResourceBundle resourceBundle;
-
 
 	public static String getParam(String key) {
 		propertyFileName = "com/gdd/utils/SysConfig";
@@ -28,9 +27,16 @@ public class ComParam {
 		}
 		return result;
 	}
-	
-	public static void main(String arg[]){
 
+	
+	// test
+	public static void main(String arg[]) {
+
+		File f = new File("");
+
+		String absolutePath = f.getAbsolutePath();
+
+		System.out.println(absolutePath);
 		System.out.println(ComParam.getParam("Port"));
 	}
 }
