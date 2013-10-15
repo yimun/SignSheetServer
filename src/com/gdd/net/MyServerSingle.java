@@ -13,6 +13,7 @@ import java.util.Date;
 import com.gdd.db.MyDatabaseConnection;
 import com.gdd.mail.DayMail;
 import com.gdd.model.Member;
+import com.gdd.utils.ComParam;
 import com.gdd.utils.SignBusiness;
 
 public class MyServerSingle{
@@ -20,7 +21,6 @@ public class MyServerSingle{
 	/**
 	 * 主服务界面
 	 */
-	private static final long serialVersionUID = 5965679769822091793L;
 	// 服务器套接字
 	private ServerSocket mServer = null;
 	// 各种数据
@@ -42,7 +42,8 @@ public class MyServerSingle{
 		
 		
 		// 设置定时邮件
-		new DayMail().send();
+		if(ComParam.getParam("Is_Accept_Mail").equals("Yes"))
+			new DayMail().send();
 
 		// 服务套接字开始
 		try {
